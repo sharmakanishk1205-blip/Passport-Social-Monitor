@@ -1,0 +1,362 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Passport Social Dashboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
+  :root { --accent: #3b82f6; --accent2: #06b6d4; --bg: #0f1117; --card: #1a1f2e; --border: #2d3748; --muted: #64748b; --success: #10b981; --warn: #f59e0b; --danger: #ef4444; }
+
+  header { background: #141824; border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+  header h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; color: #fff; }
+  header span { font-size: 12px; color: var(--muted); }
+  .live-dot { display: inline-block; width: 8px; height: 8px; background: var(--success); border-radius: 50%; margin-right: 6px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 16px 24px; }
+  .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; }
+  .stat-card .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+  .stat-card .value { font-size: 26px; font-weight: 700; margin-top: 4px; }
+  .stat-card .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .toolbar { display: flex; gap: 10px; padding: 0 24px 12px; flex-wrap: wrap; align-items: center; }
+  .toolbar input, .toolbar select { background: var(--card); border: 1px solid var(--border); color: #e2e8f0; padding: 7px 12px; border-radius: 8px; font-size: 13px; outline: none; }
+  .toolbar input:focus, .toolbar select:focus { border-color: var(--accent); }
+  .toolbar input { flex: 1; min-width: 180px; }
+  .btn { background: var(--accent); color: #fff; border: none; padding: 7px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; font-weight: 500; }
+  .btn:hover { background: #2563eb; }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: #e2e8f0; }
+  .btn-outline:hover { background: var(--card); }
+
+  .main { display: grid; grid-template-columns: 1fr; gap: 0; padding: 0 24px 24px; }
+  .posts-grid { display: flex; flex-direction: column; gap: 12px; }
+
+  .post-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; transition: border-color .2s; }
+  .post-card:hover { border-color: #4a5568; }
+  .post-card.clustered { border-left: 3px solid var(--accent2); }
+
+  .post-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+  .post-meta { display: flex; align-items: center; gap: 10px; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+  .post-user { font-size: 14px; font-weight: 600; color: #fff; }
+  .post-handle { font-size: 12px; color: var(--muted); }
+  .post-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+  .badge { font-size: 10px; padding: 3px 8px; border-radius: 20px; font-weight: 600; }
+  .badge-platform { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
+  .badge-cat { background: #1e3a5f; color: #60a5fa; }
+  .badge-pos { background: #064e3b; color: #34d399; }
+  .badge-neg { background: #450a0a; color: #fca5a5; }
+  .badge-neu { background: #1c1917; color: #a8a29e; }
+  .badge-cluster { background: #1e1b4b; color: #a5b4fc; }
+
+  .post-summary { font-size: 12px; color: var(--accent2); margin-bottom: 8px; font-style: italic; line-height: 1.4; }
+  .post-text { font-size: 14px; color: #cbd5e1; line-height: 1.6; margin-bottom: 12px; }
+  .post-footer { display: flex; align-items: center; justify-content: space-between; }
+  .post-stats { display: flex; gap: 14px; }
+  .post-stat { font-size: 12px; color: var(--muted); }
+  .post-stat span { color: #94a3b8; margin-right: 3px; }
+  .post-time { font-size: 11px; color: var(--muted); }
+  .post-actions { display: flex; gap: 8px; }
+  .action-btn { background: #1e293b; border: 1px solid var(--border); color: #94a3b8; padding: 4px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; }
+  .action-btn:hover { background: #2d3748; color: #e2e8f0; }
+
+  .translate-box { margin-top: 10px; background: #111827; border: 1px solid #1f2937; border-radius: 8px; padding: 12px; display: none; }
+  .translate-box.show { display: block; }
+  .translate-box select { width: 100%; margin-bottom: 8px; }
+  .translate-result { font-size: 13px; color: #93c5fd; min-height: 30px; }
+
+  .cluster-toggle { font-size: 11px; color: var(--accent); cursor: pointer; margin-top: 6px; display: inline-block; }
+
+  .section-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+
+  .export-bar { display: flex; gap: 8px; justify-content: flex-end; padding: 0 24px 12px; }
+
+  .empty { text-align: center; padding: 60px; color: var(--muted); }
+  .tag-lang { font-size: 10px; background: #292524; color: #a8a29e; padding: 2px 6px; border-radius: 4px; }
+
+  @media (max-width: 600px) {
+    .stats { grid-template-columns: repeat(2,1fr); }
+    .post-header { flex-direction: column; gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌐 Passport Social Monitor</h1>
+  <span><span class="live-dot"></span>Live · Last 24h · 847 posts indexed</span>
+</header>
+
+<div class="stats">
+  <div class="stat-card">
+    <div class="label">Total Posts</div>
+    <div class="value" style="color:#60a5fa">847</div>
+    <div class="sub">↑ 12% vs yesterday</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Platforms</div>
+    <div class="value" style="color:#34d399">7</div>
+    <div class="sub">Twitter, Reddit, FB...</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Spam Filtered</div>
+    <div class="value" style="color:#f87171">134</div>
+    <div class="sub">Gibberish removed</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Languages</div>
+    <div class="value" style="color:#a78bfa">23</div>
+    <div class="sub">Auto-detected</div>
+  </div>
+</div>
+
+<div class="toolbar">
+  <input type="text" id="searchInput" placeholder="🔍 Search posts..." oninput="filterPosts()" />
+  <select id="platformFilter" onchange="filterPosts()">
+    <option value="">All Platforms</option>
+    <option value="Twitter">Twitter/X</option>
+    <option value="Reddit">Reddit</option>
+    <option value="Facebook">Facebook</option>
+    <option value="LinkedIn">LinkedIn</option>
+    <option value="YouTube">YouTube</option>
+    <option value="Instagram">Instagram</option>
+  </select>
+  <select id="catFilter" onchange="filterPosts()">
+    <option value="">All Categories</option>
+    <option value="Application">Application</option>
+    <option value="Renewal">Renewal</option>
+    <option value="Tatkal">Tatkal</option>
+    <option value="Visa">Visa</option>
+    <option value="Appointments">Appointments</option>
+    <option value="Scams">Scams/Fraud</option>
+    <option value="Government">Government</option>
+    <option value="Travel Issues">Travel Issues</option>
+  </select>
+  <select id="sentFilter" onchange="filterPosts()">
+    <option value="">All Sentiments</option>
+    <option value="positive">Positive</option>
+    <option value="negative">Negative</option>
+    <option value="neutral">Neutral</option>
+  </select>
+  <select id="sortBy" onchange="filterPosts()">
+    <option value="time">Sort: Latest</option>
+    <option value="engagement">Sort: Engagement</option>
+  </select>
+</div>
+
+<div class="export-bar">
+  <button class="btn btn-outline" onclick="exportCSV()">⬇ Export CSV</button>
+  <button class="btn btn-outline" onclick="exportPDF()">⬇ Export PDF</button>
+</div>
+
+<div class="main">
+  <div class="posts-grid" id="postsGrid"></div>
+</div>
+
+<script>
+const POSTS = [
+  {
+    id:1, user:"Priya Sharma", handle:"@priya_travels", platform:"Twitter", country:"India",
+    lang:"English", category:"Tatkal", sentiment:"negative",
+    text:"Applied for Tatkal passport 3 days ago, still no update on the portal. Has anyone faced this? The PSK helpline just rings and rings. Really frustrated!",
+    summary:"User frustrated with no update on Tatkal passport application after 3 days, helpline unreachable.",
+    likes:234, comments:56, shares:12, time:"2h ago", clustered:true, clusterCount:8,
+    avatar:"PS", avatarColor:"#1e3a5f"
+  },
+  {
+    id:2, user:"James Mitchell", handle:"@jamesmit", platform:"Reddit", country:"USA",
+    lang:"English", category:"Renewal",sentiment:"positive",
+    text:"Just got my passport renewed in record 4 days! Filed online, no appointment needed. The new digital process is so much smoother than before. Highly recommend applying now.",
+    summary:"User praises fast 4-day passport renewal through new digital online process.",
+    likes:891, comments:143, shares:67, time:"4h ago", clustered:false,
+    avatar:"JM", avatarColor:"#064e3b"
+  },
+  {
+    id:3, user:"Arun Kumar", handle:"@arun_k_official", platform:"Twitter", country:"India",
+    lang:"Hindi", category:"Scams",sentiment:"negative",
+    text:"WARNING: Got a call from someone claiming to be from Passport Seva. They asked for OTP and Rs.2500 fee. DO NOT fall for this! Official govt website doesn't call for payment. Report to cybercrime.",
+    summary:"User warns about passport fraud call demanding OTP and money, urges reporting to cybercrime.",
+    likes:2100, comments:389, shares:1240, time:"1h ago", clustered:true, clusterCount:15,
+    avatar:"AK", avatarColor:"#450a0a"
+  },
+  {
+    id:4, user:"Sofia Bianchi", handle:"@sofiab_roma", platform:"Instagram", country:"Italy",
+    lang:"Italian", category:"Travel Issues", sentiment:"negative",
+    text:"Mio passaporto scaduto! Bloccata in aeroporto per 6 ore. Finalmente risolto ma che stress! Controllate sempre la scadenza prima di viaggiare.",
+    summary:"Italian traveller stranded at airport for 6 hours due to expired passport, warns others to check expiry.",
+    likes:567, comments:89, shares:34, time:"3h ago", clustered:false,
+    avatar:"SB", avatarColor:"#3b0764"
+  },
+  {
+    id:5, user:"Ministry of External Affairs", handle:"@MEAIndia", platform:"Twitter", country:"India",
+    lang:"English", category:"Government", sentiment:"neutral",
+    text:"📢 Passport Seva Kendras across 37 cities will observe extended working hours (8AM–8PM) from Dec 1–31 to clear pending applications. Walk-in tokens available from 7:45AM.",
+    summary:"MEA announces extended PSK hours across 37 cities in December to clear passport application backlog.",
+    likes:5670, comments:1230, shares:3450, time:"30m ago", clustered:false,
+    avatar:"ME", avatarColor:"#1e3a5f"
+  },
+  {
+    id:6, user:"Chen Wei", handle:"@chenwei_bj", platform:"LinkedIn", country:"China",
+    lang:"Chinese", category:"Visa", sentiment:"neutral",
+    text:"Sharing my experience applying for a business visa with a new passport. The process took 3 weeks and required extensive documentation. Key tip: ensure all documents are notarized.",
+    summary:"Professional shares 3-week business visa application experience, emphasising need for notarised documents.",
+    likes:123, comments:45, shares:28, time:"5h ago", clustered:false,
+    avatar:"CW", avatarColor:"#1c1917"
+  },
+  {
+    id:7, user:"Rahul Dev", handle:"@rahuldev99", platform:"Facebook", country:"India",
+    lang:"English", category:"Appointments", sentiment:"positive",
+    text:"Finally got my passport appointment at Ludhiana PSK! Booked 2 weeks in advance through the app. Documents checklist on the official site is very helpful. All done in 45 mins.",
+    summary:"User successfully booked Ludhiana PSK appointment 2 weeks ahead; entire visit completed in 45 minutes.",
+    likes:342, comments:78, shares:23, time:"6h ago", clustered:true, clusterCount:4,
+    avatar:"RD", avatarColor:"#064e3b"
+  },
+  {
+    id:8, user:"Sarah Johnson", handle:"@sarahjohnson", platform:"YouTube", country:"UK",
+    lang:"English", category:"Application", sentiment:"positive",
+    text:"Just uploaded a full walkthrough of the UK passport application process for first-timers. Covers documents, photos, fees, and tracking. Link in bio! Took me 10 days total.",
+    summary:"YouTuber shares full UK first-time passport application walkthrough; total process took 10 days.",
+    likes:4521, comments:678, shares:234, time:"7h ago", clustered:false,
+    avatar:"SJ", avatarColor:"#1e3a5f"
+  }
+];
+
+const TRANSLATIONS = {
+  "Hindi": { 1:"तत्काल पासपोर्ट के लिए 3 दिन पहले आवेदन किया, अभी तक कोई अपडेट नहीं। PSK हेल्पलाइन नहीं उठा रही।", 2:"पासपोर्ट 4 दिन में रिन्यू हो गया! नई डिजिटल प्रक्रिया बहुत आसान है।", 3:"चेतावनी: पासपोर्ट सेवा के नाम पर OTP और ₹2500 मांगने वाला कॉल आया। सावधान रहें!", 5:"37 शहरों में PSK विस्तारित समय (8AM-8PM) से दिसंबर में काम करेंगे।", default:"इस पोस्ट का हिंदी अनुवाद उपलब्ध नहीं है।" },
+  "Spanish": { 1:"Solicité pasaporte urgente hace 3 días, sin actualizaciones. La línea de ayuda no responde.", 2:"¡Pasaporte renovado en 4 días! El nuevo proceso digital es excelente.", 3:"ADVERTENCIA: Llamada fraudulenta pidiendo OTP y dinero en nombre de Passport Seva.", default:"Traducción al español no disponible." },
+  "French": { 1:"J'ai demandé un passeport urgent il y a 3 jours, toujours pas de nouvelles. Le service d'assistance ne répond pas.", 2:"Passeport renouvelé en 4 jours! Le nouveau processus numérique est excellent.", default:"Traduction française non disponible." },
+  "German": { default:"Deutsche Übersetzung nicht verfügbar." },
+  "Arabic": { default:"الترجمة العربية غير متوفرة." },
+  "Chinese": { default:"中文翻译不可用。" },
+  "Russian": { default:"Русский перевод недоступен." },
+  "Japanese": { default:"日本語翻訳は利用できません。" },
+  "Punjabi": { 1:"ਤਤਕਾਲ ਪਾਸਪੋਰਟ ਲਈ 3 ਦਿਨ ਪਹਿਲਾਂ ਅਪਲਾਈ ਕੀਤਾ, ਕੋਈ ਅਪਡੇਟ ਨਹੀਂ।", 3:"ਚੇਤਾਵਨੀ: ਪਾਸਪੋਰਟ ਦੇ ਨਾਮ 'ਤੇ OTP ਅਤੇ ਪੈਸੇ ਮੰਗ ਰਹੇ ਹਨ। ਧਿਆਨ ਰੱਖੋ!", default:"ਪੰਜਾਬੀ ਅਨੁਵਾਦ ਉਪਲਬਧ ਨਹੀਂ ਹੈ।" }
+};
+
+let filtered = [...POSTS];
+
+function filterPosts() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const pl = document.getElementById('platformFilter').value;
+  const cat = document.getElementById('catFilter').value;
+  const sent = document.getElementById('sentFilter').value;
+  const sort = document.getElementById('sortBy').value;
+
+  filtered = POSTS.filter(p => {
+    if (q && !p.text.toLowerCase().includes(q) && !p.summary.toLowerCase().includes(q) && !p.user.toLowerCase().includes(q)) return false;
+    if (pl && p.platform !== pl) return false;
+    if (cat && p.category !== cat) return false;
+    if (sent && p.sentiment !== sent) return false;
+    return true;
+  });
+
+  if (sort === 'engagement') filtered.sort((a,b) => (b.likes+b.comments+b.shares) - (a.likes+a.comments+a.shares));
+
+  renderPosts();
+}
+
+function renderPosts() {
+  const grid = document.getElementById('postsGrid');
+  if (filtered.length === 0) { grid.innerHTML = '<div class="empty">No posts match your filters.</div>'; return; }
+  grid.innerHTML = filtered.map(p => postHTML(p)).join('');
+}
+
+function platformEmoji(pl) {
+  return {Twitter:'🐦',Reddit:'🔴',Facebook:'📘',LinkedIn:'💼',YouTube:'▶️',Instagram:'📸',TikTok:'🎵'}[pl] || '🌐';
+}
+
+function sentBadge(s) {
+  if(s==='positive') return '<span class="badge badge-pos">😊 Positive</span>';
+  if(s==='negative') return '<span class="badge badge-neg">😠 Negative</span>';
+  return '<span class="badge badge-neu">😐 Neutral</span>';
+}
+
+function postHTML(p) {
+  const eng = p.likes + p.comments + p.shares;
+  return `
+  <div class="post-card ${p.clustered?'clustered':''}" id="card-${p.id}">
+    <div class="post-header">
+      <div class="post-meta">
+        <div class="avatar" style="background:${p.avatarColor}">${p.avatar}</div>
+        <div>
+          <div class="post-user">${p.user} <span class="tag-lang">${p.lang}</span></div>
+          <div class="post-handle">${p.handle} · ${p.country}</div>
+        </div>
+      </div>
+      <div class="post-badges">
+        <span class="badge badge-platform">${platformEmoji(p.platform)} ${p.platform}</span>
+        <span class="badge badge-cat">${p.category}</span>
+        ${sentBadge(p.sentiment)}
+        ${p.clustered ? `<span class="badge badge-cluster">🔗 ${p.clusterCount} similar</span>` : ''}
+      </div>
+    </div>
+    <div class="post-summary">💡 ${p.summary}</div>
+    <div class="post-text">${p.text}</div>
+    <div class="post-footer">
+      <div class="post-stats">
+        <div class="post-stat"><span>❤️</span>${p.likes.toLocaleString()}</div>
+        <div class="post-stat"><span>💬</span>${p.comments.toLocaleString()}</div>
+        <div class="post-stat"><span>🔁</span>${p.shares.toLocaleString()}</div>
+        <div class="post-stat"><span>📊</span>${eng.toLocaleString()}</div>
+      </div>
+      <div class="post-time">🕐 ${p.time}</div>
+    </div>
+    <div class="post-actions" style="margin-top:10px">
+      <button class="action-btn" onclick="toggleTranslate(${p.id})">🌐 Translate</button>
+      ${p.clustered ? `<button class="action-btn" onclick="alert('Showing ${p.clusterCount} similar posts grouped by topic similarity.')">🔗 View Cluster</button>` : ''}
+    </div>
+    <div class="translate-box" id="trans-${p.id}">
+      <select id="lang-${p.id}" onchange="doTranslate(${p.id})">
+        <option value="">Select language...</option>
+        <option>Hindi</option><option>Punjabi</option><option>Spanish</option>
+        <option>French</option><option>German</option><option>Arabic</option>
+        <option>Chinese</option><option>Russian</option><option>Japanese</option>
+      </select>
+      <div class="translate-result" id="tres-${p.id}">Select a language to translate.</div>
+    </div>
+  </div>`;
+}
+
+function toggleTranslate(id) {
+  const box = document.getElementById('trans-'+id);
+  box.classList.toggle('show');
+}
+
+function doTranslate(id) {
+  const lang = document.getElementById('lang-'+id).value;
+  const res = document.getElementById('tres-'+id);
+  if (!lang) return;
+  const map = TRANSLATIONS[lang] || {};
+  res.textContent = map[id] || map['default'] || 'Translation not available.';
+}
+
+function exportCSV() {
+  const headers = ['User','Handle','Platform','Country','Language','Category','Sentiment','Summary','Text','Likes','Comments','Shares','Time'];
+  const rows = filtered.map(p => [p.user,p.handle,p.platform,p.country,p.lang,p.category,p.sentiment,`"${p.summary}"`,`"${p.text}"`,p.likes,p.comments,p.shares,p.time]);
+  const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'passport_posts.csv'; a.click();
+}
+
+function exportPDF() {
+  const w = window.open('','_blank');
+  w.document.write('<html><body style="font-family:sans-serif;padding:20px"><h2>Passport Social Dashboard Export</h2>');
+  w.document.write('<p>Generated: '+new Date().toLocaleString()+'</p><hr>');
+  filtered.forEach(p => {
+    w.document.write(`<div style="margin-bottom:20px;padding:12px;border:1px solid #ccc;border-radius:8px">
+      <b>${p.user}</b> (${p.platform} · ${p.category} · ${p.sentiment})<br>
+      <i style="color:#666">${p.summary}</i><br><br>
+      ${p.text}<br>
+      <small>❤ ${p.likes} · 💬 ${p.comments} · 🔁 ${p.shares} · ${p.time}</small>
+    </div>`);
+  });
+  w.document.write('</body></html>'); w.print();
+}
+
+renderPosts();
+</script>
+</body>
+</html>
